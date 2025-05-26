@@ -108,6 +108,7 @@ def match_vllm_args(args):
     renamed_args = {RENAME_ARGS_MAP.get(k, k): v for k, v in args.items()}
     matched_args = {k: v for k, v in renamed_args.items() if k in AsyncEngineArgs.__dataclass_fields__}
     return {k: v for k, v in matched_args.items() if v not in [None, ""]}
+
 def get_local_args():
     """
     Retrieve local arguments from a JSON file.
@@ -129,13 +130,26 @@ def get_local_args():
     os.environ["HF_HUB_OFFLINE"] = "1"
 
     return local_args
-def get_engine_args():
+
+def get_engine_args(model_name=None, gpu_id=None, tensor_parallel_size = 1, extra_args=None):
+    # Set GPU device if specified
+    if gpu_id is not None:
+        import os
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
+
+    # Optionally override model name
+    if model_name is not None:
+        args["model"] = model_name
+
     # Start with default args
     args = DEFAULT_ARGS
     
     # Get env args that match keys in AsyncEngineArgs
     args.update(os.environ)
     
+    os.environ["TRANSFORMERS_OFFLINE"] = "1"
+    os.environ["HF_HUB_OFFLINE"] = "1"
+
     # Get local args if model is baked in and overwrite env args
     args.update(get_local_args())
     
@@ -154,7 +168,7 @@ def get_engine_args():
     # Set tensor parallel size and max parallel loading workers if more than 1 GPU is available
     num_gpus = device_count()
     if num_gpus > 1:
-        args["tensor_parallel_size"] = num_gpus
+        args["tensor_parallel_size"] = tensor_parallel_size
         args["max_parallel_loading_workers"] = None
         if os.getenv("MAX_PARALLEL_LOADING_WORKERS"):
             logging.warning("Overriding MAX_PARALLEL_LOADING_WORKERS with None because more than 1 GPU is available.")

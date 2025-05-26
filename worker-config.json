@@ -1385,6 +1385,22 @@
       { "value": "pythonic", "label": "Pythonic" },
       { "value": "internlm", "label": "InternLM" }
     ]
-  }
+  },
+  "MODEL_IDS": {
+      "env_var_name": "MODEL_IDS",
+      "value": "",
+      "title": "Model Directory",
+      "description": "Directory to load the weights of a particular model.",
+      "required": false,
+      "type": "text"
+    },
+    "MODEL_GPUS": {
+      "env_var_name": "MODEL_GPUS",
+      "value": "",
+      "title": "Model GPUs",
+      "description": "Model with it's corresponding GPUs",
+      "required": false,
+      "type": "text"
+    },
 }
 }
