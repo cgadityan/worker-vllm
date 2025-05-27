@@ -50,15 +50,15 @@ ENV PYTHONPATH="/:/vllm-workspace"
 FROM runpod/worker-v1-vllm:v2.5.0stable-cuda12.1.0 AS base
 
 # Preload Model 1: Qwen/QwQ-32B
-RUN python -c "from huggingface_hub import snapshot_download; \
+RUN python3 -c "from huggingface_hub import snapshot_download; \
     snapshot_download(repo_id='Qwen/QwQ-32B', local_dir='/models/QwQ-32B', local_dir_use_symlinks=False)"
 
 # Preload Model 2: Nvidia Llama-3_1-Nemotron-Ultra-253B-v1
-RUN python -c "from huggingface_hub import snapshot_download; \
+RUN python3 -c "from huggingface_hub import snapshot_download; \
     snapshot_download(repo_id='Nvidia/llama-3.1-nemotron-ultra-253b-v1', local_dir='/models/Nemo-253B', local_dir_use_symlinks=False)"
 
 # Preload Model 3: DeepSeek-R1
-RUN python -c "from huggingface_hub import snapshot_download; \
+RUN python3 -c "from huggingface_hub import snapshot_download; \
     snapshot_download(repo_id='DeepSeek-R1', local_dir='/models/DeepSeek-R1', local_dir_use_symlinks=False)"
 
 
