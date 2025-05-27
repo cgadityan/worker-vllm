@@ -55,11 +55,11 @@ RUN python3 -c "from huggingface_hub import snapshot_download; \
 
 # Preload Model 2: Nvidia Llama-3_1-Nemotron-Ultra-253B-v1
 RUN python3 -c "from huggingface_hub import snapshot_download; \
-    snapshot_download(repo_id='Nvidia/llama-3.1-nemotron-ultra-253b-v1', local_dir='/models/Nemo-253B', local_dir_use_symlinks=False)"
+    snapshot_download(repo_id='nvidia/Llama-3_1-Nemotron-Ultra-253B-v1', local_dir='/models/Nemo-253B', local_dir_use_symlinks=False)"
 
 # Preload Model 3: DeepSeek-R1
 RUN python3 -c "from huggingface_hub import snapshot_download; \
-    snapshot_download(repo_id='DeepSeek-R1', local_dir='/models/DeepSeek-R1', local_dir_use_symlinks=False)"
+    snapshot_download(repo_id='deepseek-ai/DeepSeek-R1', local_dir='/models/DeepSeek-R1', local_dir_use_symlinks=False)"
 
 
 COPY src /src
