@@ -1,9 +1,7 @@
 FROM nvidia/cuda:12.1.0-base-ubuntu22.04 
 
 RUN apt-get update -y \
-    && apt-get install -y python3-pip \
-    && apt-get install -y git-lfs \
-    && git lfs install 
+    && apt-get install -y python3-pip
 
 RUN ldconfig /usr/local/cuda-12.1/compat/
 
@@ -17,16 +15,8 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 RUN python3 -m pip install vllm==0.8.5 && \
     python3 -m pip install flashinfer -i https://flashinfer.ai/whl/cu121/torch2.3
 
-# Set up the working directory for the worker-vllm application
-WORKDIR /worker-vllm
-
-# Copy the application code into the container
-COPY . /worker-vllm
-
 # Setup for Option 2: Building the Image with the Model included
-ARG MODEL_1_NAME=""
-ARG MODEL_2_NAME=""
-ARG MODEL_3_NAME=""
+ARG MODEL_NAME=""
 ARG TOKENIZER_NAME=""
 ARG BASE_PATH="/runpod-volume"
 ARG QUANTIZATION=""
@@ -45,21 +35,6 @@ ENV MODEL_NAME=$MODEL_NAME \
     HF_HUB_ENABLE_HF_TRANSFER=0 
 
 ENV PYTHONPATH="/:/vllm-workspace"
-
-# Use the RunPod vLLM base image with CUDA 12.x (for H100 support)
-FROM runpod/worker-v1-vllm:v2.5.0stable-cuda12.1.0 AS base
-
-# Preload Model 1: Qwen/QwQ-32B
-RUN python -c "from huggingface_hub import snapshot_download; \
-    snapshot_download(repo_id='Qwen/QwQ-32B', local_dir='/models/QwQ-32B', local_dir_use_symlinks=False)"
-
-# Preload Model 2: Nvidia Llama-3_1-Nemotron-Ultra-253B-v1
-RUN python -c "from huggingface_hub import snapshot_download; \
-    snapshot_download(repo_id='Nvidia/llama-3.1-nemotron-ultra-253b-v1', local_dir='/models/Nemo-253B', local_dir_use_symlinks=False)"
-
-# Preload Model 3: DeepSeek-R1
-RUN python -c "from huggingface_hub import snapshot_download; \
-    snapshot_download(repo_id='DeepSeek-R1', local_dir='/models/DeepSeek-R1', local_dir_use_symlinks=False)"
 
 
 COPY src /src
