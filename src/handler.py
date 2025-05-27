@@ -35,23 +35,20 @@ for idx, model_id in enumerate(model_list):
     OpenAIvLLMEngines[model_id] = OpenAIvLLMEngine_model
 
 async def process_jobs(jobs):
+    results = []
     for job in jobs:
         if job["model_name"] == model_list[0]:
-            task = OpenAIvLLMEngines[model_list[0]].generate(job)
-            async for batch in results_generator:
-                yield batch
-    return await asyncio.gather(*tasks)
+            results_generator = OpenAIvLLMEngines[model_list[0]].generate(job)
+            results.append(results_generator)
+    return results
 
 async def handler(job):
     job_input = JobInput(job["input"])
     # engine = OpenAIvLLMEngine if job_input.openai_route else vllm_engine
-
     results = await process_jobs(job_input)
     for result in results:
-        yield result
-    # results_generator = engine.generate(job_input)
-    async for batch in results_generator:
-        yield batch
+        async for batch in result:
+            yield batch
 
 runpod.serverless.start(
     {
