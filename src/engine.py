@@ -21,9 +21,9 @@ from tokenizer import TokenizerWrapper
 from engine_args import get_engine_args
 
 class vLLMEngine:
-    def __init__(self, engine = None):
+    def __init__(self, engine_args = None, engine = None):
         load_dotenv() # For local development
-        self.engine_args = get_engine_args()
+        self.engine_args = engine_args if engine_args is not None else get_engine_args()
         logging.info(f"Engine args: {self.engine_args}")
         self.tokenizer = TokenizerWrapper(self.engine_args.tokenizer or self.engine_args.model, 
                                           self.engine_args.tokenizer_revision, 
