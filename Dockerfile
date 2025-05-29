@@ -34,6 +34,8 @@ ARG MODEL_REVISION=""
 ARG TOKENIZER_REVISION=""
 
 ENV MODEL_NAME=$MODEL_NAME \
+    MODEL_GPUS = "0;1;2"\
+    MODEL_IDS = "/models/QwQ-32B;/models/Nemo-253B;/models/DeepSeek-R1"
     MODEL_REVISION=$MODEL_REVISION \
     TOKENIZER_NAME=$TOKENIZER_NAME \
     TOKENIZER_REVISION=$TOKENIZER_REVISION \
@@ -53,13 +55,13 @@ FROM runpod/worker-v1-vllm:v2.5.0stable-cuda12.1.0 AS base
 RUN python3 -c "from huggingface_hub import snapshot_download; \
     snapshot_download(repo_id='Qwen/QwQ-32B', local_dir='/models/QwQ-32B', local_dir_use_symlinks=False)"
 
-# Preload Model 2: Nvidia Llama-3_1-Nemotron-Ultra-253B-v1
-RUN python3 -c "from huggingface_hub import snapshot_download; \
-    snapshot_download(repo_id='nvidia/Llama-3_1-Nemotron-Ultra-253B-v1', local_dir='/models/Nemo-253B', local_dir_use_symlinks=False)"
+# # Preload Model 2: Nvidia Llama-3_1-Nemotron-Ultra-253B-v1
+# RUN python3 -c "from huggingface_hub import snapshot_download; \
+#     snapshot_download(repo_id='nvidia/Llama-3_1-Nemotron-Ultra-253B-v1', local_dir='/models/Nemo-253B', local_dir_use_symlinks=False)"
 
-# Preload Model 3: DeepSeek-R1
-RUN python3 -c "from huggingface_hub import snapshot_download; \
-    snapshot_download(repo_id='deepseek-ai/DeepSeek-R1', local_dir='/models/DeepSeek-R1', local_dir_use_symlinks=False)"
+# # Preload Model 3: DeepSeek-R1
+# RUN python3 -c "from huggingface_hub import snapshot_download; \
+#     snapshot_download(repo_id='deepseek-ai/DeepSeek-R1', local_dir='/models/DeepSeek-R1', local_dir_use_symlinks=False)"
 
 
 COPY src /src

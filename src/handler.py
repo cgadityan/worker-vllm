@@ -1,59 +1,74 @@
 import os
+import logging
+import multiprocessing as mp
 import runpod
 from utils import JobInput
 from engine import vLLMEngine, OpenAIvLLMEngine
 from engine_args import get_engine_args
 
-# vllm_engine = vLLMEngine()
-# OpenAIvLLMEngine = OpenAIvLLMEngine(vllm_engine)
-OpenAIvLLMEngines = {}
+# Read models and GPU assignments from env
+model_list = [m.strip() for m in os.getenv("MODEL_IDS", "").split(";") if m.strip()]
+gpu_assignments = [g.strip() for g in os.getenv("MODEL_GPUS", "").split(";") if g.strip()]
 
-# Read model IDs and GPU assignments from env (or config)
-model_list = os.getenv("MODEL_IDS", "").split(";")
-gpu_assignments = os.getenv("MODEL_GPUS", "").split(";")
-loaded_models = {}
+def engine_infer(model_id, device_ids, job):
+    # Set per-process CUDA environment
+    os.environ["CUDA_VISIBLE_DEVICES"] = device_ids
+    from engine import vLLMEngine, OpenAIvLLMEngine  # re-import in subprocess
+    from engine_args import get_engine_args
 
-for idx, model_id in enumerate(model_list):
-    model_id = model_id.strip()
-    if not model_id:
-        continue
-    # Determine GPU(s) for this model
-    device_ids = gpu_assignments[idx].strip() if idx < len(gpu_assignments) else ""
-    if device_ids:
-        # Limit visible devices to the specified ones for this model
-        os.environ["CUDA_VISIBLE_DEVICES"] = device_ids
-    # Initialize the model using vLLM LLM class
     engine_args = get_engine_args(
         model=model_id,
-        dtype="float16",               # load weights in FP16
+        dtype="float16",
         gpu_id=device_ids,
-        # trust_remote_code=True,        # allow custom model code if needed
         tensor_parallel_size=(len(device_ids.split(",")) if device_ids and "," in device_ids else 1)
     )
     vllm_engine = vLLMEngine(engine_args=engine_args)
-    OpenAIvLLMEngine_model = OpenAIvLLMEngine(vllm_engine)
-    OpenAIvLLMEngines[model_id] = OpenAIvLLMEngine_model
+    openai_engine = OpenAIvLLMEngine(vllm_engine)
+    result = []
+    for batch in openai_engine.generate(job):
+        result.append(batch)
+    return result
 
-async def process_jobs(jobs):
-    results = []
+def process_all_jobs(jobs):
+    mp_ctx = mp.get_context('spawn')
+    pool = mp_ctx.Pool(processes=len(jobs))
+    async_results = []
+
     for job in jobs:
-        if job["model_name"] == model_list[0]:
-            results_generator = OpenAIvLLMEngines[model_list[0]].generate(job)
-            results.append(results_generator)
+        model_id = job.get("model_name")
+        if model_id not in model_list:
+            async_results.append(None)
+            continue
+        gpu_idx = model_list.index(model_id)
+        device_ids = gpu_assignments[gpu_idx] if gpu_idx < len(gpu_assignments) else ""
+        async_result = pool.apply_async(engine_infer, args=(model_id, device_ids, job))
+        async_results.append(async_result)
+
+    pool.close()
+    pool.join()
+
+    results = []
+    for async_result in async_results:
+        if async_result is None:
+            results.append(None)
+            continue
+        try:
+            results.append(async_result.get(timeout=300))
+        except Exception as e:
+            logging.error(f"Inference failed: {e}")
+            results.append(None)
     return results
 
 async def handler(job):
     job_input = JobInput(job["input"])
-    # engine = OpenAIvLLMEngine if job_input.openai_route else vllm_engine
-    results = await process_jobs(job_input)
+    results = process_all_jobs(job_input)
     for result in results:
-        async for batch in result:
-            yield batch
+        if result is not None:
+            for batch in result:
+                yield batch
 
-runpod.serverless.start(
-    {
-        "handler": handler,
-        "concurrency_modifier": lambda x: vllm_engine.max_concurrency,
-        "return_aggregate_stream": True,
-    }
-)
+runpod.serverless.start({
+    "handler": handler,
+    "concurrency_modifier": lambda x: len(model_list),
+    "return_aggregate_stream": True,
+})
