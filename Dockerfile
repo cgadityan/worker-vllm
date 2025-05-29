@@ -24,9 +24,9 @@ WORKDIR /worker-vllm
 COPY . /worker-vllm
 
 # Setup for Option 2: Building the Image with the Model included
-ARG MODEL_1_NAME=""
-ARG MODEL_2_NAME=""
-ARG MODEL_3_NAME=""
+# ARG MODEL_1_NAME=""
+# ARG MODEL_2_NAME=""
+# ARG MODEL_3_NAME=""
 ARG TOKENIZER_NAME=""
 ARG BASE_PATH="/runpod-volume"
 ARG QUANTIZATION=""
