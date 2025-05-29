@@ -2,13 +2,14 @@ import os
 import logging
 import multiprocessing as mp
 import runpod
+from torch.cuda import device_count
 from utils import JobInput
 from engine import vLLMEngine, OpenAIvLLMEngine
 from engine_args import get_engine_args
 
 # Read models and GPU assignments from env
 model_list = [m.strip() for m in os.getenv("MODEL_IDS", "").split(";") if m.strip()]
-gpu_assignments = [g.strip() for g in os.getenv("MODEL_GPUS", "").split(";") if g.strip()]
+# gpu_assignments = [g.strip() for g in os.getenv("MODEL_GPUS", "").split(";") if g.strip()]
 
 def engine_infer(model_id, device_ids, job):
     # Set per-process CUDA environment
@@ -33,14 +34,16 @@ def process_all_jobs(jobs):
     mp_ctx = mp.get_context('spawn')
     pool = mp_ctx.Pool(processes=len(jobs))
     async_results = []
+    num_gpu = device_count()
 
     for job in jobs:
-        model_id = job.get("model_name")
+        model_id = job["model_name"]
+        gpu_ids = job["gpu_ids"]
+        gpu_len = gpu_ids.strip(",")
         if model_id not in model_list:
             async_results.append(None)
             continue
-        gpu_idx = model_list.index(model_id)
-        device_ids = gpu_assignments[gpu_idx] if gpu_idx < len(gpu_assignments) else ""
+        device_ids = gpu_ids if gpu_len < len(num_gpu) else ""
         async_result = pool.apply_async(engine_infer, args=(model_id, device_ids, job))
         async_results.append(async_result)
 
