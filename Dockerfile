@@ -48,7 +48,7 @@ ENV MODEL_NAME=$MODEL_NAME \
 ENV PYTHONPATH="/:/vllm-workspace"
 
 # Use the RunPod vLLM base image with CUDA 12.x (for H100 support)
-FROM runpod/worker-v1-vllm:v2.5.0stable-cuda12.1.0 AS base
+# FROM runpod/worker-v1-vllm:v2.5.0stable-cuda12.1.0 AS base
 
 # Preload Model 1: Qwen/QwQ-32B
 RUN python3 -c "from huggingface_hub import snapshot_download; \
