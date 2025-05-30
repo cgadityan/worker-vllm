@@ -1,7 +1,7 @@
 FROM nvidia/cuda:12.1.0-base-ubuntu22.04 
 
 RUN apt-get update -y \
-    && apt-get install -y python3-pip \
+    && apt-get install -y python3-pip 
     # && apt-get install -y git-lfs \
     # && git lfs install 
 
@@ -17,11 +17,11 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 RUN python3 -m pip install vllm==0.8.5 && \
     python3 -m pip install flashinfer -i https://flashinfer.ai/whl/cu121/torch2.3
 
-# Set up the working directory for the worker-vllm application
-WORKDIR /worker-vllm
+# # Set up the working directory for the worker-vllm application
+# WORKDIR /worker-vllm
 
-# Copy the application code into the container
-COPY . /worker-vllm
+# # Copy the application code into the container
+# COPY . /worker-vllm
 
 # Setup for Option 2: Building the Image with the Model included
 # ARG MODEL_1_NAME=""
