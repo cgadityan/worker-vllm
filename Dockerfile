@@ -2,8 +2,8 @@ FROM nvidia/cuda:12.1.0-base-ubuntu22.04
 
 RUN apt-get update -y \
     && apt-get install -y python3-pip \
-    && apt-get install -y git-lfs \
-    && git lfs install 
+    # && apt-get install -y git-lfs \
+    # && git lfs install 
 
 RUN ldconfig /usr/local/cuda-12.1/compat/
 
@@ -34,7 +34,7 @@ ARG MODEL_REVISION=""
 ARG TOKENIZER_REVISION=""
 
 ENV MODEL_NAME=$MODEL_NAME \
-    MODEL_IDS="/models/QwQ-32B;/models/Nemo-253B;/models/DeepSeek-R1"\
+    MODEL_IDS="Qwen/QwQ-32B;nvidia/Llama-3_1-Nemotron-Ultra-253B-v1;deepseek-ai/DeepSeek-R1"\
     MODEL_REVISION=$MODEL_REVISION \
     TOKENIZER_NAME=$TOKENIZER_NAME \
     TOKENIZER_REVISION=$TOKENIZER_REVISION \
@@ -50,9 +50,9 @@ ENV PYTHONPATH="/:/vllm-workspace"
 # Use the RunPod vLLM base image with CUDA 12.x (for H100 support)
 # FROM runpod/worker-v1-vllm:v2.5.0stable-cuda12.1.0 AS base
 
-# Preload Model 1: Qwen/QwQ-32B
-RUN python3 -c "from huggingface_hub import snapshot_download; \
-    snapshot_download(repo_id='Qwen/QwQ-32B', local_dir='/models/QwQ-32B', local_dir_use_symlinks=False)"
+# # Preload Model 1: Qwen/QwQ-32B
+# RUN python3 -c "from huggingface_hub import snapshot_download; \
+#     snapshot_download(repo_id='Qwen/QwQ-32B', local_dir='/models/QwQ-32B', local_dir_use_symlinks=False)"
 
 # # Preload Model 2: Nvidia Llama-3_1-Nemotron-Ultra-253B-v1
 # RUN python3 -c "from huggingface_hub import snapshot_download; \

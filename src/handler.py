@@ -36,7 +36,7 @@ def process_all_jobs(jobs):
     async_results = []
     num_gpu = device_count()
 
-    for job in jobs:
+    for job_key, job in jobs.items():
         model_id = job["model_name"]
         gpu_ids = job["gpu_ids"]
         gpu_len = gpu_ids.strip(",")
