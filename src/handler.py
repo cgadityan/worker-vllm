@@ -38,8 +38,8 @@ def process_all_jobs(jobs):
 
     for job_key, job in jobs.items():
         model_id = job["model_name"]
-        gpu_ids = job["gpu_ids"]
-        gpu_len = gpu_ids.strip(",")
+        gpu_ids = str(job["gpu_ids"])
+        gpu_len = gpu_ids.count(",") + 1
         if model_id not in model_list:
             async_results.append(None)
             continue
