@@ -32,7 +32,7 @@ def engine_infer(model_id, device_ids, job):
 
 def process_all_jobs(jobs):
     mp_ctx = mp.get_context('spawn')
-    pool = mp_ctx.Pool(processes=len(jobs))
+    pool = mp_ctx.Pool(processes=len(jobs.keys()))
     async_results = []
     num_gpu = device_count()
 
