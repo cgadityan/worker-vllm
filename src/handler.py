@@ -32,18 +32,20 @@ def engine_infer(model_id, device_ids, job):
 
 def process_all_jobs(jobs):
     mp_ctx = mp.get_context('spawn')
+    print(f"Processing {len(jobs.keys())} jobs")
     pool = mp_ctx.Pool(processes=len(jobs.keys()))
     async_results = []
     num_gpu = device_count()
 
     for job_key, job in jobs.items():
         model_id = job["model_name"]
+        # Ensure gpu_ids is a string (handles both int and str cases)
         gpu_ids = str(job["gpu_ids"])
         gpu_len = gpu_ids.count(",") + 1
         if model_id not in model_list:
             async_results.append(None)
             continue
-        device_ids = gpu_ids if gpu_len < len(num_gpu) else ""
+        device_ids = gpu_ids if gpu_len < num_gpu else ""
         async_result = pool.apply_async(engine_infer, args=(model_id, device_ids, job))
         async_results.append(async_result)
 
@@ -63,8 +65,8 @@ def process_all_jobs(jobs):
     return results
 
 async def handler(job):
-    job_input = JobInput(job["input"])
-    results = process_all_jobs(job_input)
+    jobs = job["input"]  # jobs is now a dict of job_name: job_detail
+    results = process_all_jobs(jobs)
     for result in results:
         if result is not None:
             for batch in result:
