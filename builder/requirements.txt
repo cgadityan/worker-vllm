@@ -10,4 +10,4 @@ pydantic-settings
 hf-transfer
 transformers
 bitsandbytes>=0.45.0
-jsons
+jsonlib
