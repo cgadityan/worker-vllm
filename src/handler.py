@@ -53,7 +53,10 @@ def process_all_jobs(jobs_dict):
     for name, job in jobs_dict.items():
         # Defensive: job itself might be a JSON string
         if isinstance(job, str):
-            job = json.loads(job)
+            try:
+                job = json.loads(job)
+            except json.JSONDecodeError:
+                pass  # Leave job as is if it can't be decoded
 
         try:
             model_id = job["model_name"]
