@@ -2,6 +2,7 @@ import os
 import logging
 import multiprocessing as mp
 import runpod
+import json
 from torch.cuda import device_count
 from utils import JobInput
 from engine import vLLMEngine, OpenAIvLLMEngine
@@ -30,39 +31,62 @@ def engine_infer(model_id, device_ids, job):
         result.append(batch)
     return result
 
-def process_all_jobs(jobs):
-    mp_ctx = mp.get_context('spawn')
-    print(f"Processing {len(jobs.keys())} jobs")
-    pool = mp_ctx.Pool(processes=len(jobs.keys()))
-    async_results = []
-    num_gpu = device_count()
+# ---------- multiprocessing wrapper ----------
+def process_all_jobs(jobs_dict):
+    """
+    jobs_dict = {
+        "input1": {...},
+        "input2": {...},
+        ...
+    }
+    """
+    # Defensive: JSON string → dict
+    if isinstance(jobs_dict, str):
+        jobs_dict = json.loads(jobs_dict)
 
-    for job_key, job in jobs.items():
-        model_id = job["model_name"]
-        # Ensure gpu_ids is a string (handles both int and str cases)
-        gpu_ids = str(job["gpu_ids"])
-        gpu_len = gpu_ids.count(",") + 1
-        if model_id not in model_list:
+    mp_ctx = mp.get_context("spawn")
+    pool   = mp_ctx.Pool(processes=len(jobs_dict))
+    async_results = []
+
+    total_gpu = device_count()
+
+    for name, job in jobs_dict.items():
+        # Defensive: job itself might be a JSON string
+        if isinstance(job, str):
+            job = json.loads(job)
+
+        try:
+            model_id = job["model_name"]
+            gpu_ids  = str(job["gpu_ids"])
+        except (KeyError, TypeError) as e:
+            logging.error(f"Malformed job payload for '{name}': {e}")
             async_results.append(None)
             continue
-        device_ids = gpu_ids if gpu_len < num_gpu else ""
-        async_result = pool.apply_async(engine_infer, args=(model_id, device_ids, job))
-        async_results.append(async_result)
 
-    pool.close()
-    pool.join()
+        # Fallback in case someone passes an out-of-range GPU id
+        if not gpu_ids or int(gpu_ids.split(",")[0]) >= total_gpu:
+            logging.error(f"Job '{name}' requested invalid gpu_ids='{gpu_ids}'")
+            async_results.append(None)
+            continue
+
+        async_results.append(
+            pool.apply_async(engine_infer, args=(model_id, gpu_ids, job))
+        )
+
+    pool.close(); pool.join()
 
     results = []
-    for async_result in async_results:
-        if async_result is None:
+    for a in async_results:
+        if a is None:
             results.append(None)
             continue
         try:
-            results.append(async_result.get(timeout=300))
+            results.append(a.get(timeout=300))
         except Exception as e:
             logging.error(f"Inference failed: {e}")
             results.append(None)
     return results
+
 
 async def handler(job):
     jobs = job["input"]  # jobs is now a dict of job_name: job_detail
